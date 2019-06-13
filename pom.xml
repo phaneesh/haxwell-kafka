@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.hbase.haxwell</groupId>
+    <artifactId>haxwell-kafka</artifactId>
+    <version>0.1-SNAPSHOT</version>
+
+    <name>haxwell-kafka</name>
+    <url>https://github.com/phaneesh/haxwell-kafka</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <haxwell.version>0.1-SNAPSHOT</haxwell.version>
+        <hdp.version>2.6.5.0-292</hdp.version>
+        <kafka.version>1.0.0.${hdp.version}</kafka.version>
+        <lombok.version>1.18.2</lombok.version>
+        <hbase.version>1.1.2.${hdp.version}</hbase.version>
+    </properties>
+
+
+    <distributionManagement>
+        <repository>
+            <id>clojars</id>
+            <name>Clojars repository</name>
+            <url>https://clojars.org/repo</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>clojars</id>
+            <name>Clojars repository</name>
+            <url>https://clojars.org/repo</url>
+        </repository>
+        <!-- HDP Repositories -->
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+                <updatePolicy>never</updatePolicy>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
+            <id>HDPReleases</id>
+            <name>HDP Releases</name>
+            <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+            <layout>default</layout>
+        </repository>
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
+            <id>HDPPublic</id>
+            <name>HDP Public</name>
+            <url>http://repo.hortonworks.com/content/repositories/public/</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+
+    <scm>
+        <connection>scm:git:https://github.com/phaneesh/haxwell.git</connection>
+        <developerConnection>scm:git:https://github.com/phaneesh/haxwell.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/phaneesh/haxwell</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>phaneesh</id>
+            <name>Phaneesh Nagaraja</name>
+            <email>phaneesh.n@gmail.com</email>
+        </developer>
+    </developers>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>${hbase.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hbase.haxwell</groupId>
+            <artifactId>haxwell</artifactId>
+            <version>${haxwell.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>${kafka.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>log4j-over-slf4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <build>${project.version}</build>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.20.1</version>
+                <configuration>
+                    <forkCount>8</forkCount>
+                    <reuseForks>false</reuseForks>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
