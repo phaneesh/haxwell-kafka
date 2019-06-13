@@ -1,17 +1,12 @@
 package com.hbase.haxwell;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hbase.haxwell.api.HaxwellEvent;
 import com.hbase.haxwell.api.HaxwellEventListener;
+import com.hbase.haxwell.api.core.HaxwellRow;
 import com.hbase.haxwell.config.HaxwellConfig;
-import com.hbase.haxwell.core.HaxwellColumn;
-import com.hbase.haxwell.core.HaxwellRow;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j;
-import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.KeyValue.Type;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -42,50 +37,25 @@ public class KafkaEventListener implements HaxwellEventListener {
   }
 
   @Override
-  public void processEvents(List<HaxwellEvent> haxwellEvents) {
-    for(HaxwellEvent event : haxwellEvents) {
-      final String tableName = Bytes.toString(event.getTable());
-      if(haxwellConfig.getTableName().equals("*") || tableName.equals(haxwellConfig.getTableName())) {
-        event.getKeyValues().forEach( cell -> {
-          String type = null;
-          HaxwellColumn column = null;
-          if(cell.getTypeByte() == Type.Put.getCode()) {
-            type = "PUT";
-            column = HaxwellColumn.builder()
-                .columnFamily(Bytes.toString(CellUtil.cloneFamily(cell)))
-                .columnName(Bytes.toString(CellUtil.cloneQualifier(cell)))
-                .value(Bytes.toString(CellUtil.cloneValue(cell)))
-                .build();
+  public void processEvents(List<HaxwellRow> haxwellRows) {
+    for (HaxwellRow event : haxwellRows) {
+      final String tableName = event.getTableName();
+      if (haxwellConfig.getTableName().equals("*") || tableName.equals(haxwellConfig.getTableName())) {
+        try {
+          switch (haxwellConfig.getTopicMode()) {
+            case SINGLE_TOPIC:
+              producer.send(new ProducerRecord<>(haxwellConfig.getTopicName(), null, event.getId(),
+                  objectMapper.writeValueAsString(event))).get();
+              break;
+            case TOPIC_PER_TABLE:
+              producer.send(new ProducerRecord<>(tableName, null, event.getId(),
+                  objectMapper.writeValueAsString(event))).get();
           }
-          if(cell.getTypeByte() == Type.Delete.getCode()) {
-            type = "DELETE";
-          }
-          if(type != null) {
-            final String id = Bytes.toString(CellUtil.cloneRow(cell));
-            HaxwellRow row = HaxwellRow.builder()
-                .tableName(tableName)
-                .id(id)
-                .operation(type)
-                .column(column)
-                .build();
-            try {
-              switch (haxwellConfig.getTopicMode()) {
-                case SINGLE_TOPIC:
-                  producer.send(new ProducerRecord<>(haxwellConfig.getTopicName(), null, id,
-                      objectMapper.writeValueAsString(row))).get();
-                  break;
-                case TOPIC_PER_TABLE:
-                  producer.send(new ProducerRecord<>(tableName, null, id,
-                      objectMapper.writeValueAsString(row))).get();
-              }
-              log.info("Published message with id: " +id);
-            } catch(Exception e) {
-              log.error("Error processing event:", e);
-            }
-          }
-        });
+          log.info("Published message with id: " + event.getId());
+        } catch (Exception e) {
+          log.error("Error processing event:", e);
+        }
       }
-
     }
   }
 }
