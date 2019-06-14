@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.extern.log4j.Log4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.util.List;
 import java.util.Properties;
@@ -21,7 +22,7 @@ public class KafkaEventListener implements HaxwellEventListener {
 
   private final HaxwellConfig haxwellConfig;
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   @Builder
   public KafkaEventListener(HaxwellConfig haxwellConfig) {
@@ -42,16 +43,20 @@ public class KafkaEventListener implements HaxwellEventListener {
       final String tableName = event.getTableName();
       if (haxwellConfig.getTableName().equals("*") || tableName.equals(haxwellConfig.getTableName())) {
         try {
+          RecordMetadata recordMetadata = null;
           switch (haxwellConfig.getTopicMode()) {
             case SINGLE_TOPIC:
-              producer.send(new ProducerRecord<>(haxwellConfig.getTopicName(), null, event.getId(),
+              recordMetadata = producer.send(new ProducerRecord<>(haxwellConfig.getTopicName(), null, event.getId(),
                   objectMapper.writeValueAsString(event))).get();
               break;
             case TOPIC_PER_TABLE:
-              producer.send(new ProducerRecord<>(tableName, null, event.getId(),
+              recordMetadata = producer.send(new ProducerRecord<>(tableName, null, event.getId(),
                   objectMapper.writeValueAsString(event))).get();
           }
-          log.info("Published message with id: " + event.getId());
+          if (log.isDebugEnabled()) {
+            log.debug("Published message with row key: " + event.getId()
+                + " | Offset: " + recordMetadata.offset() + " | Partition:" + recordMetadata.partition());
+          }
         } catch (Exception e) {
           log.error("Error processing event:", e);
         }
